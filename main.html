@@ -1,0 +1,425 @@
+
+<link href="style.css" rel="stylesheet" type="text/css" />
+
+<html>
+<head>
+    <script src="jquery-1.12.3.js"></script>
+
+    <title>Json_LD Generator</title>
+    <center><h2>Json_LD Generator</h2></center>
+</head>
+<body class="post">
+<center>
+<table>
+	<tr>
+		<td style="width : 350px;"  valign="top">
+			<div id="formHolder">
+				<form id="selector">
+					<b>Select Service Type:</b>
+					<select id="form-selector" name="form-selector" class = "select1">
+						<option>---</option>
+					</select>
+				</form>
+				<form id="FoodEstablishment" style="display:none;">
+					<input type="hidden" data-path="@context" value="http://www.schema.org" />
+					<label for="foodEstablishmentType">Select Food Establishment Type</label>
+					<select  id = "foodEstablishmentType" name="foodEstablishmentType" type="select" data-path="@type" class = "select1">
+						
+					</select> <br>
+					
+				</form> 
+				<form id="LodgingBusiness" style="display:none;">
+					<input type="hidden" data-path="@context" value="http://www.schema.org" />
+					<label for="lodgingBusiness">Select Lodging Business Type</label>
+					<select id="lodgingBusinessType" name="lodgingBusinessType" type="select" data-path="@type"  class = "select1">
+						
+					</select> <br>
+					
+				</form> 
+				<form id="Event" style="display:none;">
+					<input type="hidden" data-path="@context" value="http://www.schema.org" />
+					<label for="Event">Select Event Type</label>
+					<select id="eventType" name="eventType" type="select" data-path="@type" class = "select1">
+						
+					</select> <br>
+					
+				</form>
+				
+				<form id="Offer" style="display:none;">
+					<input type="hidden" data-path="@context" value="http://www.schema.org" />
+					<label for="Offer">Select Offer Type</label>
+					<select id="offerType" name="offerType" type="select" data-path="@type" class = "select1">
+						
+					</select> <br>
+					
+				</form>
+			</div>
+		</td>
+		<td style="width : 420px;" align="right" valign="top">	
+			<br />
+			<div class="output">
+			  <textarea rows="30" cols="45" class="json">
+
+			  </textarea>
+			  <div id="buttonHolder">
+				<button id="reset">
+				  Reset Form
+				</button>
+			  </div>
+			</div>
+		</td>
+	</tr>
+</table>
+</center>
+<script>
+	$(function() {
+	
+		//Here the selectors are set
+		$('form').each(function() {
+		  if ($(this).attr('id') != 'selector') {
+			var option = $(this).attr('id');
+			$('select#form-selector').append('<option value="' + option + '">');
+		  };
+		});
+		$('option').each(function() {
+		  console.log($(this).html());
+		  if (!$(this).html() || $(this).html() === "") {
+			$(this).html($(this).val());
+		  }
+		});
+		var selected;
+		var old;
+
+		//this changes the form based on the selector
+		$("#selector").change(function() {
+		  old = selected;
+		  selected = "#" + $("#selector option:selected").val();
+		  if (old) {
+			$(old).slideToggle();
+		  }
+		  $(selected).slideToggle();
+		  $("pre").html("");
+		  $('input,textarea').each(function() {
+			if ($(this).attr('type') != 'hidden') {
+			  $(this).val("");
+			};
+		  });
+
+		
+
+		  var element = {};
+		  
+		  // Here is the generator
+		  $(selected + ' input,' + selected + ' textarea,' + selected + ' select').keyup(function() {
+			element = {};
+			 $(selected + ' input,' + selected + ' textarea,' + selected + ' select').each(function() {
+			  var path = $(this).data('path').split('.'),
+				  currentData =
+				  element;
+			  for (var i = 0; i < path.length - 1; i++) {
+				if (!currentData[path[i]]) {
+				  currentData[path[i]] = {};
+				}
+				currentData = currentData[path[i]];
+			  }
+			  currentData[path[path.length - 1]] = ($(this).val().length > 0 ? $(this).val() : null);
+			  if (currentData[path[path.length - 1]] === null) {
+				delete currentData[path[path.length - 1]];
+			  }
+			  //Here is the output defined
+			  $(".json").val("<scri"+"pt type='application/ld+json'> \n" + JSON.stringify(element, null, 2) + "\n </scri"+ "pt>");
+			});
+		  });
+		});
+
+		//Here is the reset button
+		$("#reset").click(function() {
+		  $("pre").html("");
+		  $('input,textarea,select').each(function() {
+			if ($(this).attr('type') != 'hidden') {
+			  $(this).val("");
+			}
+		  });
+		});
+		
+		var lines;
+		var txtFile = new XMLHttpRequest();
+		txtFile.open("get","schema.nt", true);
+		txtFile.onreadystatechange = function() {
+			lines = txtFile.responseText.split('\n'); 
+		}
+		txtFile.onload =  function() {
+			txtFile.onload =  function(){}; //remove function after being called once
+			var opt;
+			var init = false;
+			var n = 0;
+			for (var j = 0; j < lines.length; j++) { 
+				// Add options to the selects
+				if(lines[j].search("<http://schema.org/FoodEstablishment>") != -1 && lines[j].search("subClassOf") != -1){
+					opt = getOption(lines[j]);
+					addOptionsToSelect('foodEstablishmentType', opt)
+				}
+				if(lines[j].search("<http://schema.org/LodgingBusiness>") != -1 && lines[j].search("subClassOf") != -1){
+					opt = getOption(lines[j]);
+					addOptionsToSelect('lodgingBusinessType', opt)
+				}
+				if(lines[j].search("<http://schema.org/Event>") != -1 && lines[j].search("subClassOf") != -1){
+					opt = getOption(lines[j]);
+					addOptionsToSelect('eventType', opt)
+				}
+				if(lines[j].search("<http://schema.org/Offer>") != -1 && lines[j].search("subClassOf") != -1){
+					opt = getOption(lines[j]);
+					addOptionsToSelect('offerType', opt)
+				}
+
+					
+				
+				
+				
+			}
+
+			var datapath;
+				var name;
+				var id;
+				var type;
+                		var comment;
+				var arrayServices = ["FoodEstablishment", "LodgingBusiness"];
+				var arrayOffent = ["Event", "Offer"];
+				var existingFields = [];
+
+			//fields for Offer and Event
+			for(var q = 0; q < arrayOffent.length; q++){
+				for (var t = 0; t < lines.length; t++) {
+					if(lines[t].search("<http://schema.org/"+arrayOffent[q]+">") != -1 && lines[t].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[t]);
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+							comment = getComment(lines[z]);
+						}
+					}
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+							type = getType(lines[z]);
+						}
+					}
+					$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     					.attr("id", name)
+     					.attr("name", name)
+					.attr("data-path", name)
+     					.appendTo("#"+arrayOffent[q]);
+				}
+				}
+				for (var j = 0; j < lines.length; j++) {
+					if(lines[j].search("<http://schema.org/Thing>") != -1 && lines[j].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[j]);
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+							comment = getComment(lines[z]);
+						}
+					}
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+							type = getType(lines[z]);
+						}
+					}
+				
+				$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     					.attr("id", name)
+     					.attr("name", name)
+					.attr("data-path", name)
+     					.appendTo("#"+arrayOffent[q]);
+				}
+				}	
+			}   
+
+			//Fields for FoodEstablishment and LodgingBusiness	
+			
+			for(var q = 0; q < arrayOffent.length; q++){
+			var index = 0;
+				for (var t = 0; t < lines.length; t++) {
+					if(lines[t].search("<http://schema.org/"+arrayServices[q]+">") != -1 && lines[t].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[t]);
+						existingFields[index] = name;
+						index++;
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+							comment = getComment(lines[z]);
+						}
+					}
+					for (var z = 0; z < lines.length; z++) {
+						if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+							type = getType(lines[z]);
+						}
+					}
+					$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     					.attr("id", name)
+     					.attr("name", name)
+					.attr("data-path", name)
+     					.appendTo("#"+arrayServices[q]);
+					}
+				}
+				for (var j = 0; j < lines.length; j++) {
+					if(lines[j].search("<http://schema.org/LocalBusiness>") != -1 && lines[j].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[j]);
+						var found = false;
+						for(var u = 0; u < index; u++) {
+							if(name === existingFields[u]){
+								found = true;
+							}
+						}
+						if(found === false){
+                                                	existingFields[index] = name;
+							index++;
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+									comment = getComment(lines[z]);
+								}
+							}
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+									type = getType(lines[z]);
+								}
+							}
+					
+							$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     							.attr("id", name)
+     							.attr("name", name)
+							.attr("data-path", name)
+     							.appendTo("#"+arrayServices[q]);
+						}
+					}
+				}
+				for (var j = 0; j < lines.length; j++) {
+					if(lines[j].search("<http://schema.org/Place>") != -1 && lines[j].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[j]);
+						var found = false;
+						for(var u = 0; u < index; u++) {
+							if(name === existingFields[u]){
+								found = true;
+							}
+						}
+						if(found === false){
+                                                	existingFields[index] = name;
+							index++;
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+									comment = getComment(lines[z]);
+								}
+							}
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+									type = getType(lines[z]);
+								}
+							}
+					
+							$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     							.attr("id", name)
+     							.attr("name", name)
+							.attr("data-path", name)
+     							.appendTo("#"+arrayServices[q]);
+						}
+					}
+				}
+				for (var j = 0; j < lines.length; j++) {
+					if(lines[j].search("<http://schema.org/Organization>") != -1 && lines[j].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[j]);
+						var found = false;
+						for(var u = 0; u < index; u++) {
+							if(name === existingFields[u]){
+								found = true;
+							}
+						}
+						if(found === false){
+                                                	existingFields[index] = name;
+							index++;
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+									comment = getComment(lines[z]);
+								}
+							}
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+									type = getType(lines[z]);
+								}
+							}
+					
+							$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     							.attr("id", name)
+     							.attr("name", name)
+							.attr("data-path", name)
+     							.appendTo("#"+arrayServices[q]);
+						}
+					}
+				}
+				for (var j = 0; j < lines.length; j++) {
+					if(lines[j].search("<http://schema.org/Thing>") != -1 && lines[j].search("<http://schema.org/domainIncludes>") != -1){
+						name = getOption(lines[j]);
+						var found = false;
+						for(var u = 0; u < index; u++) {
+							if(name === existingFields[u]){
+								found = true;
+							}
+						}
+						if(found === false){
+                                                	existingFields[index] = name;
+							index++;
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("comment") != -1){
+									comment = getComment(lines[z]);
+								}
+							}
+							for (var z = 0; z < lines.length; z++) {
+								if(lines[z].search("http://schema.org/" + name) != -1 && lines[z].search("rangeIncludes") != -1){
+									type = getType(lines[z]);
+								}
+							}
+					
+							$("<label for='" + name +"'>" +name+": <span style='font-weight:normal;'><font size ='-1'>" + comment + "</font></span></label><input type='" +type+"' value='' /><br>")
+     							.attr("id", name)
+     							.attr("name", name)
+							.attr("data-path", name)
+     							.appendTo("#"+arrayServices[q]);
+						}
+					}
+				}
+			}    
+ 
+		}
+		txtFile.send(null);
+
+		
+	});
+  
+  
+	function getTextLabel($label){
+		var text = $label.text().split(':');	
+		return text[0] + ":";
+	}
+	function getOption(str){
+		var arr = str.split('>');
+		return arr[0].substr(19);	
+	}
+		
+	function getType(str){
+		var arr = str.split('>');
+		return arr[3].substr(19);	
+	}
+		
+	function getComment(str){
+		return str.substr(str.search("\""));
+	}
+	
+	function addOptionsToSelect(id, value){
+		var sel = document.getElementById(id);
+		var opt = document.createElement('option');
+		opt.appendChild( document.createTextNode(value) );
+		opt.value = value; 
+		sel.appendChild(opt); 
+	}
+	
+	
+
+  </script>
+  
+</body>
+</html>
